@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # e.g. to run this script:
-# SSH_USER_NAME="ssh" SSH_USER_PASSWORD="pwd" HOSTNAME="secretsanta.example.com" TIMEZONE="Australia/Sydney" ./create.sh
+# SSH_USER_NAME="ssh" SSH_USER_PASSWORD="pwd" HOSTNAME="secretsanta.example.com" TIMEZONE="Australia/Sydney" CERTNAME="secretsanta.example.com" ./create.sh
 
 if [ -z "$SSH_USER_NAME" ]; then
     echo "Error: SSH_USER_NAME must be defined!"
@@ -23,6 +23,10 @@ if [ -z "$TIMEZONE" ]; then
     exit 1
 fi
 
+if [ -z "$CERTNAME" ]; then
+    echo "Error: CERTNAME must be defined!"
+    exit 1
+fi
 # The name of the image that will be created with 'docker build'
 IMAGE_NAME="secretsanta"
 
@@ -62,6 +66,7 @@ if ! docker image ls --format '{{.Tag}}' | grep -q "^$IMAGE_NAME$"; then
         --build-arg SSH_USER_PASSWORD="$SSH_USER_PASSWORD" \
         --build-arg HOSTNAME="$HOSTNAME" \
         --build-arg TIMEZONE="$TIMEZONE" \
+        --build-arg CERTNAME="$CERTNAME" \
         .
 else
     echo "Image '$IMAGE_NAME' already exists."
@@ -70,6 +75,19 @@ fi
 docker run \
     -itd --network="$NETWORK_NAME" \
     --ip="$CONTAINER_IP_ADDR" \
+    -p 443:443 \
+    -p 22:22 \
     --name="$CONTAINER_NAME" \
-    --hostname="$CONTAINER_HOST_NAME" \
+    --hostname="$HOSTNAME" \
     "$IMAGE_NAME"
+
+# E.g. running locally
+
+echo 'export ASPNETCORE_URLS="https://0.0.0.0:443"'
+echo 'export ASPNETCORE_Kestrel__Certificates__Default__Path="/etc/ssl/certs/secretsanta.example.com.pfx"'
+echo 'cd /opt/secretsanta/published'
+echo 'sudo -E dotnet ./SecretSanta.Api.dll'
+echo 'pgrep -a dotnet'
+echo 'ps -o pid,cmd -C dotnet'
+echo 'curl -vkI https://localhost:443/ || true'
+echo 'tail -n 200 /var/log/secretsanta.log | grep -E "Now listening on|Application started|Kestrel"'
