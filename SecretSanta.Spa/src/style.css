@@ -1,0 +1,70 @@
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,700);
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #e93800;
+  font-family: "Open Sans", sans-serif;
+  text-align: center;
+  font-size: 18px;
+  color: #fff;
+}
+
+h1 {
+  color: #fff;
+  transform: skew(0, -6deg);
+  font-size: 2.5rem;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 4px;
+}
+
+button {
+  padding: 10px;
+  font-size: 18px;
+  margin: auto;
+  cursor: pointer;
+  width: 220px;
+  position: relative;
+  background: #2d3ae9;
+  border: 0;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 20px;
+  outline: 0;
+}
+
+button:hover {
+  background: #086608;
+}
+
+button:active {
+  background: #344234;
+}
+
+.wrapper {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.action {
+  margin: 20px 0;
+  border-radius: 5px;
+  padding: 0 0;
+}
+
+.receiver {
+  margin: 20px 0;
+  border-radius: 5px;
+  padding: 20px 20px;
+  background-color: #086608;
+}
