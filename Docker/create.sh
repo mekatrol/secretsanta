@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # e.g. to run this script:
-# SSH_USER_NAME="ssh" SSH_USER_PASSWORD="pwd" HOSTNAME="secretsanta.example.com" TIMEZONE="Australia/Sydney" CERTNAME="secretsanta.example.com" ./create.sh
+# SSH_USER_NAME="ssh" SSH_USER_PASSWORD="pwd" HOSTNAME="secretsanta.example.com" TIMEZONE="Australia/Sydney" CERTNAME="secretsanta.example.com-rsa" ./create.sh
 
 if [ -z "$SSH_USER_NAME" ]; then
     echo "Error: SSH_USER_NAME must be defined!"
@@ -36,7 +36,7 @@ CONTAINER_NAME="secretsanta"
 # The name of the network the nginx server will use
 NETWORK_NAME="docker-network"
 
-# The driver method used when creting the network if it does not already exist
+# The driver method used when creating the network if it does not already exist
 NETWORK_DRIVER="ipvlan"
 
 # The network interface card used for the network
@@ -86,11 +86,14 @@ docker run \
     --volume="$LETS_ENCRYPT_VOLUME" \
     "$IMAGE_NAME"
 
+# Check env values set
+echo 'docker inspect secretsanta --format '{{json .Config.Env}}' | jq -r '.[]' | grep ASPNETCORE_'
+
 # E.g. running locally
 
 echo 'export ASPNETCORE_URLS="https://0.0.0.0:8443"'
-echo 'export ASPNETCORE_Kestrel__Certificates__Default__Path="/etc/ssl/certs/secretsanta.example.com.crt"'
-echo 'export ASPNETCORE_Kestrel__Certificates__Default__KeyPath="/etc/ssl/private/secretsanta.example.com.key"'
+echo 'export ASPNETCORE_Kestrel__Certificates__Default__Path="/etc/letsencrypt/live/secretsanta.example.com-rsa/fullchain.pem"'
+echo 'export ASPNETCORE_Kestrel__Certificates__Default__KeyPath="/etc/letsencrypt/live/secretsanta.example.com-rsa/privkey.pem"'
 echo 'cd /opt/secretsanta/published'
 echo 'sudo -E dotnet ./SecretSanta.Api.dll'
 echo 'pgrep -a dotnet'

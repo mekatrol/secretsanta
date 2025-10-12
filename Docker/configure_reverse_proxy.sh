@@ -41,34 +41,20 @@ while IFS=' ' read -r HOSTNAME IP_ADDRESS PROTOCOL_SCHEME PORT || [[ -n "${HOSTN
     if [[ -n "${HOSTNAME:-}" && -n "${IP_ADDRESS:-}" && -n "${PROTOCOL_SCHEME:-}" && -n "${PORT:-}" ]]; then
         cat >>"$CONFIG_FILE" <<NGINX
 
-# $HOSTNAME --> $PROTOCOL_SCHEME://$IP_ADDRESS:$PORT
+# http://$HOSTNAME/.well-known/acme-challenge/* --> http://$HOSTNAME/.well-known/acme-challenge/*
+# http://$HOSTNAME/*                            --> http://$IP_ADDRESS
 server {
-    listen $PORT ssl http2;
+    listen 80;
     server_name $HOSTNAME;
+    root /var/www/html;
 
-    ssl_certificate     /etc/ssl/certs/$HOSTNAME.crt;
-    ssl_certificate_key /etc/ssl/private/$HOSTNAME.key;
-    ssl_protocols       TLSv1.2 TLSv1.3;
-    ssl_ciphers         HIGH:!aNULL:!MD5;
-
-    # Enable SNI when proxying HTTPS upstreams
-    proxy_ssl_server_name on;
-    proxy_ssl_name \$host;
+    location ^~ /.well-known/acme-challenge/ {
+        default_type text/plain;
+        try_files \$uri =404;
+    }
 
     location / {
-        proxy_pass $PROTOCOL_SCHEME://$IP_ADDRESS:$PORT;
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Forwarded-Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection \$connection_upgrade;
-        proxy_read_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_connect_timeout 5s;
-        proxy_redirect off;
+        index index.html;
     }
 }
 NGINX

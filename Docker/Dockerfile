@@ -107,22 +107,10 @@ RUN mkdir /var/run/sshd
 # Exclude core messages in docker cotnainer
 RUN sed -i 's/system()/system(exclude-kmsg(yes))/g' /etc/syslog-ng/syslog-ng.conf
 
-# Copy all certs/keys from build context
-COPY ssl/certs/ /tmp/ssl/certs/
-COPY ssl/priv/  /tmp/ssl/priv/
-
-# Ensure target dirs exist with correct perms
-RUN mkdir -p /etc/ssl/certs /etc/ssl/private \
-    && chmod 755 /etc/ssl/certs \
-    && chmod 700 /etc/ssl/private
-
-COPY ssl/certs/${CERTNAME}.crt /etc/ssl/certs/${CERTNAME}.crt
-COPY ssl/priv/${CERTNAME}.key /etc/ssl/private/${CERTNAME}.key
-
 # Tell ASP.NET to use certs and listen on all interfaces 443
 ENV ASPNETCORE_URLS="https://0.0.0.0:8443"
-ENV ASPNETCORE_Kestrel__Certificates__Default__Path="/etc/ssl/certs/$CERTNAME.crt"
-ENV ASPNETCORE_Kestrel__Certificates__Default__KeyPath="/etc/ssl/private/$CERTNAME.key"
+ENV ASPNETCORE_Kestrel__Certificates__Default__Path="/etc/letsencrypt/live/$CERTNAME/fullchain.pem"
+ENV ASPNETCORE_Kestrel__Certificates__Default__KeyPath="/etc/letsencrypt/live/$CERTNAME/privkey.pem"
 
 # Back to root directory
 WORKDIR /
@@ -139,20 +127,6 @@ RUN chmod +x /configure_reverse_proxy.sh
 # Copy the reverse proxy definition file (strip Windows carriage returns if they exist)
 COPY reverse_proxy_list.txt /reverse_proxy_list.txt
 RUN sed -i 's/\r$//' /reverse_proxy_list.txt
-
-# For each hostname in reverse_proxy_list.txt, install cert+key
-RUN while IFS=' ' read -r HOSTNAME IP PROTO || [ -n "$HOSTNAME" ]; do \
-    [ -z "$HOSTNAME" ] || [ "${HOSTNAME#\#}" != "$HOSTNAME" ] && continue; \
-    CRT="/tmp/ssl/certs/${HOSTNAME}.crt"; \
-    KEY="/tmp/ssl/priv/${HOSTNAME}.key"; \
-    if [ -f "$CRT" ] && [ -f "$KEY" ]; then \
-    install -m 0644 "$CRT" "/etc/ssl/certs/${HOSTNAME}.crt"; \
-    install -m 0600 "$KEY" "/etc/ssl/private/${HOSTNAME}.key"; \
-    else \
-    echo "Warning: missing cert or key for ${HOSTNAME}" >&2; \
-    fi; \
-    done < /reverse_proxy_list.txt \
-    && rm -rf /tmp/ssl/certs /tmp/ssl/priv
 
 # Run the configuration script
 RUN /configure_reverse_proxy.sh
@@ -197,13 +171,21 @@ RUN  ln -fs /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
 WORKDIR /opt/secretsanta/published
 
 # Create container startup script
-RUN echo "#!/bin/bash\n\
-    service syslog-ng start\n\
-    service cron start\n\
-    service ssh start\n\    
-    exec nginx -g 'daemon off;'\n\
-    nohup dotnet /opt/secretsanta/published/SecretSanta.Api.dll >>/var/log/secretsanta.log 2>&1 &\n\
-    tail -f /var/log/syslog" > /start.sh && chmod +x /start.sh
+RUN cat > /start.sh <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+
+service syslog-ng start
+service cron start
+service ssh start
+
+# start app in background, log to file
+nohup dotnet /opt/secretsanta/published/SecretSanta.Api.dll >>/var/log/secretsanta.log 2>&1 &
+
+# keep PID 1 as nginx
+exec nginx -g 'daemon off;'
+SH
+RUN chmod +x /start.sh
 
 # Run container start up script
 CMD ["/bin/bash", "/start.sh"]
