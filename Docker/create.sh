@@ -51,6 +51,9 @@ NETWORK_GATEWAY="10.2.2.1"
 # Static IP address for the mail server host
 CONTAINER_IP_ADDR="10.2.2.235"
 
+# The lets encrypt volume
+LETS_ENCRYPT_VOLUME="/data/etc-letsencrypt:/etc/letsencrypt"
+
 # Check if the network exists
 if ! docker network ls --format '{{.Name}}' | grep -q "^$NETWORK_NAME$"; then
     echo "Network '$NETWORK_NAME' does not exist. Creating it..."
@@ -75,19 +78,22 @@ fi
 docker run \
     -itd --network="$NETWORK_NAME" \
     --ip="$CONTAINER_IP_ADDR" \
-    -p 443:443 \
+    -p 8443:8443 \
+    -p 80:80 \
     -p 22:22 \
     --name="$CONTAINER_NAME" \
     --hostname="$HOSTNAME" \
+    --volume="$LETS_ENCRYPT_VOLUME" \
     "$IMAGE_NAME"
 
 # E.g. running locally
 
-echo 'export ASPNETCORE_URLS="https://0.0.0.0:443"'
-echo 'export ASPNETCORE_Kestrel__Certificates__Default__Path="/etc/ssl/certs/secretsanta.example.com.pfx"'
+echo 'export ASPNETCORE_URLS="https://0.0.0.0:8443"'
+echo 'export ASPNETCORE_Kestrel__Certificates__Default__Path="/etc/ssl/certs/secretsanta.example.com.crt"'
+echo 'export ASPNETCORE_Kestrel__Certificates__Default__KeyPath="/etc/ssl/private/secretsanta.example.com.key"'
 echo 'cd /opt/secretsanta/published'
 echo 'sudo -E dotnet ./SecretSanta.Api.dll'
 echo 'pgrep -a dotnet'
 echo 'ps -o pid,cmd -C dotnet'
-echo 'curl -vkI https://localhost:443/ || true'
+echo 'curl -vkI https://localhost:8443/ || true'
 echo 'tail -n 200 /var/log/secretsanta.log | grep -E "Now listening on|Application started|Kestrel"'
