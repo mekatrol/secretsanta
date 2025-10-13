@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # e.g. to run this script:
 # SSH_USER_NAME="ssh" SSH_USER_PASSWORD="pwd" HOSTNAME="secretsanta.example.com" TIMEZONE="Australia/Sydney" CERTNAME="secretsanta.example.com-rsa" ./create.sh
@@ -27,6 +28,7 @@ if [ -z "$CERTNAME" ]; then
     echo "Error: CERTNAME must be defined!"
     exit 1
 fi
+
 # The name of the image that will be created with 'docker build'
 IMAGE_NAME="secretsanta"
 
