@@ -86,7 +86,7 @@ EXPOSE 443 80 8443
 
 # Set up the cron job to renew certificates once per week
 # Use to generate in first instance:
-#   certbot certonly --webroot --webroot-path=/var/www/html --email admin@test.com --agree-tos --cert-name mail.test.com-rsa -d mail.test.com --key-type rsa
+#   certbot certonly --webroot --webroot-path=/var/www/html --email admin@test.com --agree-tos --cert-name secretsanta.test.com-rsa -d secretsanta.test.com --key-type rsa
 RUN echo "5 0 */7 * * root certbot renew --quiet && nginx -s reload" > /etc/cron.d/certbot-renewal
 
 # Create a directory to store cron logs

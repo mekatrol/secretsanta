@@ -50,7 +50,7 @@ NETWORK_SUBNET="10.2.2.0/24"
 # The network gateway
 NETWORK_GATEWAY="10.2.2.1"
 
-# Static IP address for the mail server host
+# Static IP address for the server host
 CONTAINER_IP_ADDR="10.2.2.235"
 
 # The lets encrypt volume
