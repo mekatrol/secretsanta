@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Name of the container
 CONTAINER_NAME="secretsanta"
